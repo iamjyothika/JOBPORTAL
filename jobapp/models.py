@@ -14,6 +14,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
+  
+
     def __str__(self):
         return self.username
 
@@ -28,7 +30,7 @@ class Company(models.Model):
             raise ValidationError("The owner must have the Employer role.")
     
     def __str__(self):
-        return self.name
+        return self.companyname
     
 class JobListing(models.Model):
     title = models.CharField(max_length=200)
@@ -39,6 +41,7 @@ class JobListing(models.Model):
     salary = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='job_listings',null=True)  
 
     def __str__(self):
         return self.title  
