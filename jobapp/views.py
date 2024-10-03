@@ -7,7 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, RoleSerializer,JobListingSerializer,CompanySerializer,JobApplicationSerializer
+from .serializers import  *
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from urllib.parse import unquote
 #  {"email":"asif@gmail.com",
@@ -136,13 +136,20 @@ class JobListView(APIView):
         serializer = JobListingSerializer(jobs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class EmployerJobListingsView(generics.ListAPIView):
-    serializer_class = JobListingSerializer
+class EmployerJobListingsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get(self, request):
         # Return job listings where the owner is the authenticated employer
-        return JobListing.objects.filter(owner=self.request.user)   
+        job_listings = JobListing.objects.filter(owner=request.user)
+
+        if job_listings.exists():
+            # If job listings exist, serialize them
+            serializer = JobListingSerializer(job_listings, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # If no job listings exist, return a message
+            return Response({"message": "You have not added any job listings."}, status=status.HTTP_200_OK)
         
 
 
@@ -275,9 +282,91 @@ class EmployerJobApplicationsView(generics.ListAPIView):
                 return Response({"detail": "You are not authorized to delete this job application."}, status=status.HTTP_403_FORBIDDEN)
         except JobApplication.DoesNotExist:
             return Response({"detail": "Job application not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+class EmployerCandidateDetails(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     
 
+    def get(self, request):
+        if request.user.role == "admin":
+            candidates = User.objects.filter(role='candidate').values('id', 'username', 'email')
+            
+            # Get all employers and their company details
+            employers_with_companies = Company.objects.select_related('owner').values(
+                'companyname', 'location', 'description', 'owner__username', 'owner__email'
+            )
 
-
+            # Format response data
+            response_data = {
+                'candidates': list(candidates),
+                'employers': list(employers_with_companies),
+            }
+            
+            return Response(response_data, status=200)
+        else:
+            return Response({'detail': 'Permission denied'}, status=403)
+           
+    
+class AdminJobApplications(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     
 
+    def get(self, request):
+        if request.user.role.lower() == "admin":  # Ensure case-insensitivity
+            job_applications = JobApplication.objects.all()
+            print(job_applications)
+            serializer = JobApplicationSerializer(job_applications, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"message": "Authenticated user is not an admin"}, status=status.HTTP_403_FORBIDDEN)
+    
+class ApproveRejectJobApplicationView(generics.UpdateAPIView):
+    serializer_class = JobApplicationSerializer
+    permission_classes = [IsAuthenticated] 
+    authentication_classes=[JWTAuthentication] # Only allow admins to access this view
+
+    def patch(self, request, *args, **kwargs):
+        # Get the application instance
+        job_application = self.get_object()  # Get the job application instance based on the provided ID
+        action = request.data.get('action')
+     
+        
+        # Check if the user is an admin
+        if request.user.role != 'admin':
+            return Response(
+                {"detail": "Only admins can approve or reject applications."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Update the application status
+      
+        if action == 'accepted':
+            if job_application.status == "Rejected":
+                return Response({
+                    'message': 'This application has been rejected and cannot be approved again. Please ask the candidate to reapply.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            job_application.status = 'Accepted'  # Update status to accepted
+            message = 'Application approved successfully.'
+        elif action == 'reject':
+            job_application.status = 'Rejected'  # Update status to rejected
+            message = 'Application rejected successfully.'
+        else:
+            return Response({'error': 'Invalid operation. Use "approve" or "reject".'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the updated job application status
+        job_application.save()
+        serializer = JobApplicationSerializer(job_application)  # Serialize the updated job application instance
+
+        return Response({
+            'message': message,
+            'application': serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def get_object(self):
+        # Override this method to get the JobApplication instance based on the provided ID
+        application_id = self.kwargs.get('pk')  # Assuming the application ID is passed as a URL parameter
+        return JobApplication.objects.get(id=application_id)

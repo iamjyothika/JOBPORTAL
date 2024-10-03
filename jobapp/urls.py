@@ -19,13 +19,15 @@ urlpatterns = [
     path('my-applications/', CandidateJobApplicationsView.as_view(), name='my-job-applications'),
 
 
-    path('candidates-applications/', EmployerJobApplicationsView.as_view(), name='employer-job-applications'),#employer can view the applications applied for the job listing they have posted
-     path('delete/applications/<int:pk>/', EmployerJobApplicationsView.as_view(), name='delete-job-application'),#employer can delete the applications applied for the job listing they have posted
+    path('candidates-applications/', EmployerJobApplicationsView.as_view(), name='employer-job-applications'),#employer can view the candidate applications  for the job listing they have posted
+     path('delete/applications/<int:pk>/', EmployerJobApplicationsView.as_view(), name='delete-job-application'),#employer can delete the candidate applications  for the job listing they have posted
 
    
    
-   #admin access to applications
-    # path('admin/applications/', AdminJobApplicationsView.as_view(), name='admin-job-applications'),
+   #admin access to applications and view the employers-candidate details
+    path('employee-candidate/details/', EmployerCandidateDetails.as_view(), name='admin-details'),
+    path('super/applications/', AdminJobApplications.as_view(), name='admin-job-applications'),#viewing all applications
+    path('super/applications/<int:pk>/approve-reject/', ApproveRejectJobApplicationView.as_view(), name='approve-reject-job-application'),#approve/reject applications
 
     
     
