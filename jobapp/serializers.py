@@ -63,7 +63,8 @@ class CompanySerializer(serializers.ModelSerializer):
         read_only_fields = ['owner']
 
 class JobApplicationSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.CharField(source='candidate.username', read_only=True)
     class Meta:
         model = JobApplication
-        fields = ['id', 'job',  'resume', 'cover_letter', 'applied_at', 'status']
+        fields = ['id', 'job', 'candidate_name', 'resume', 'cover_letter', 'applied_at', 'status']
         read_only_fields = ['applied_at', 'status']        

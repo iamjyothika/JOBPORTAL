@@ -9,7 +9,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 from .serializers import  *
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from urllib.parse import unquote
+from rest_framework.pagination import PageNumberPagination
+
+
 #  {"email":"asif@gmail.com",
 #    "password":"asif00",
 #    "username":"Asif",
@@ -130,6 +132,12 @@ class JobListView(APIView):
             jobs = jobs.filter(salary__gte=min_salary)
         elif max_salary:
             jobs = jobs.filter(salary__lte=max_salary)
+        paginator = PageNumberPagination()
+        paginated_jobs = paginator.paginate_queryset(jobs, request)
+        serializer = JobListingSerializer(paginated_jobs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
 
 
         # Serialize filtered results
@@ -137,9 +145,11 @@ class JobListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class EmployerJobListingsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
     def get(self, request):
+        # Check if the authenticated user is an employer
+        if request.user.role != 'employer':
+            return Response({"message": "You have no access to view job listings."}, status=status.HTTP_403_FORBIDDEN)
+
         # Return job listings where the owner is the authenticated employer
         job_listings = JobListing.objects.filter(owner=request.user)
 
@@ -156,21 +166,41 @@ class EmployerJobListingsView(APIView):
             
       
         
+class CreateJobListingView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         # Only employers can create jobs
         if request.user.role != 'employer':
             return Response({'error': 'Only employers can post jobs.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Create job listing
-        serializer = JobListingSerializer(data=request.data)
+        # Get the company ID from the request data
+        company_id = request.data.get('company')
+
+        if not company_id:
+            return Response({'error': 'Company ID is required to create a job listing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Ensure the company belongs to the authenticated employer
+            company = Company.objects.get(id=company_id, owner=request.user)
+        except Company.DoesNotExist:
+            return Response({'error': f'You cannot create jobs for this company (ID: {company_id}).'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Create job listing for the employer's company
+        serializer = JobListingSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(owner=request.user)
+            serializer.save(owner=request.user, company=company)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
    
+
+   
     
 
+class UpdateJobListingView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def patch(self, request, pk):
         try:
@@ -188,7 +218,9 @@ class EmployerJobListingsView(APIView):
 
     
 
-
+class DeleteJobListingView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def delete(self, request, pk):
         try:
@@ -283,7 +315,7 @@ class EmployerJobApplicationsView(generics.ListAPIView):
         except JobApplication.DoesNotExist:
             return Response({"detail": "Job application not found."}, status=status.HTTP_404_NOT_FOUND)
         
-
+    
 
 class EmployerCandidateDetails(APIView):
     permission_classes = [IsAuthenticated]
@@ -321,6 +353,15 @@ class AdminJobApplications(APIView):
             print(job_applications)
             serializer = JobApplicationSerializer(job_applications, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
+            # paginator = PageNumberPagination()
+            # paginator.page_size = 1 # Set the number of applications per page
+            # paginated_job_applications = paginator.paginate_queryset(job_applications, request)
+
+            # # Serialize the paginated results
+            # serializer = JobApplicationSerializer(paginated_job_applications, many=True)
+
+            # # Return paginated response
+            # return paginator.get_paginated_response(serializer.data)
         return Response({"message": "Authenticated user is not an admin"}, status=status.HTTP_403_FORBIDDEN)
     
 class ApproveRejectJobApplicationView(generics.UpdateAPIView):

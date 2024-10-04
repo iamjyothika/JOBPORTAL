@@ -8,7 +8,11 @@ urlpatterns = [
     path('jobs/', JobListView.as_view(), name='job-list'),#without or with  authentication anyone can see the joblistings
 
     path('employer/job-listings/', EmployerJobListingsView.as_view(), name='employer-job-listings'),#authenticated employer can view their job listings they have added
-    path('jobs/<int:pk>/', JobListView.as_view(), name='job-detail'),#for the authenticated employer-updating and deleting  the job listings they have added 
+    path('jobs/create/', CreateJobListingView.as_view(), name='create-job-listing'),# authenticated employer can create the job listing
+    path('jobs/update/<int:pk>/', UpdateJobListingView.as_view(), name='update-job-listing'),#for the authenticated employer-updating the job listings they have added
+    path('jobs/delete/<int:pk>/', DeleteJobListingView.as_view(), name='delete-job-listing'),#for the authenticated employer-deleting the job listings they have added
+    
+     
     
 
     
@@ -18,7 +22,7 @@ urlpatterns = [
     path('applications/<int:pk>/delete/', JobApplicationDeleteView.as_view(), name='job-application-delete'),
     path('my-applications/', CandidateJobApplicationsView.as_view(), name='my-job-applications'),
 
-
+  #employee access to candidate applications
     path('candidates-applications/', EmployerJobApplicationsView.as_view(), name='employer-job-applications'),#employer can view the candidate applications  for the job listing they have posted
      path('delete/applications/<int:pk>/', EmployerJobApplicationsView.as_view(), name='delete-job-application'),#employer can delete the candidate applications  for the job listing they have posted
 
