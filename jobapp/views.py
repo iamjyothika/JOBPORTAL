@@ -1,3 +1,96 @@
+"""
+Job Portal API
+
+This API enables employers to post job listings, manage job applications, and allows candidates to search for jobs and apply to them.
+
+Key Features:
+--------------
+1. **Authentication**:
+    - Employers and candidates are required to authenticate via JWT (JSON Web Token).
+    - Role-based access control is implemented to ensure only employers can post and manage jobs, while candidates can search for and apply to jobs.
+
+2. **Job Listings**:
+    - Employers can create, update, and delete job listings.
+    - Candidates can search for job listings based on keywords such as title, description, or requirements.
+    - API endpoints include:
+        - `POST /jobs/create/`: Create a new job listing (employer only).
+        - `GET /jobs/search/?q=<keyword>`: Search for jobs based on keywords.
+        - `GET /employer/job-listings/`: Retrieve details of a specific job listing.
+        - `PATCH /jobs/update/<int:pk>/`: Update an existing job listing (employer only).
+        - `DELETE /jobs/delete/<int:pk>/`: Delete a job listing (employer only).
+
+3. **Job Applications**:
+    - Candidates can apply for job listings by submitting resumes and cover letters.
+    - Employers can view applications for their job listings and approve or reject them.
+    - API endpoints include:
+        - `POST /jobapply/`: Apply for a job (candidate only).
+        - `GET /my-applications/`: View all job applications submitted by the authenticated candidate.
+        - `GET /candidates-applications/`: View all applications for job listings created by the authenticated employer.
+        - `DELETE 'delete/applications/<int:pk>/`: Delete a specific job application (employer only).
+        - `PATCH /applications/<int:id>/approve-reject/`: Approve or reject job applications (admin only).
+
+4. **Admin Access**:
+    - Administrators can view and manage job applications across the portal.
+    - API endpoints include:
+        - `GET /super/applications/`: View all job applications.
+        - `PATCH /super/applications/<int:pk>/approve-reject/`: Approve or reject any job application as an admin.
+
+Permissions:
+-------------
+- **Employers**: Can post job listings, view applications, and delete job applications related to their listings.
+- **Candidates**: Can search for jobs, apply for jobs, and view their own applications.
+- **Administrators**: Have full control over job listings and applications, with the ability to approve/reject any job application.
+
+Error Handling:
+---------------
+- The API includes appropriate error handling to ensure valid data submission.
+- Common HTTP response codes:
+    - `200 OK`: The request was successful.
+    - `201 Created`: A new resource was successfully created.
+    - `400 Bad Request`: Invalid data was provided.
+    - `403 Forbidden`: Unauthorized access to a resource (e.g., a candidate trying to create a job listing).
+    - `404 Not Found`: Resource not found (e.g., job listing or application not found).
+    - `500 Internal Server Error`: An unexpected server error occurred.
+
+Usage Instructions:
+-------------------
+1. **Authentication**: 
+    - Register an account as an employer or candidate.
+    - Login to obtain a JWT token, which must be included in the `Authorization` header for subsequent requests.
+
+2. **Job Listing Management**: 
+    - Employers can create job listings for their company and manage applications.
+
+3. **Job Search**: 
+    - Candidates can search for jobs using keywords like job title, description, or requirements.
+
+4. **Job Application Process**: 
+    - Candidates can apply to jobs by uploading a resume and cover letter. Employers can view and manage these applications.
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 from rest_framework import generics, status,permissions
 from rest_framework.response import Response
